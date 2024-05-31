@@ -1,0 +1,7 @@
+{
+    "free-search": true,
+    "intermediate-solutions": false,
+    "output-mode": "json",
+    "output-time": true,
+    "solver": "org.chuffed.chuffed@0.10.4"
+}

@@ -1,0 +1,25 @@
+﻿  Floorplan.cpp
+  GuillotineFloorplan.cpp
+D:\Facultate\Semestrul_2_Master\AEA\Code-Automated-Algorithm-Selection\floorplanning\src\GuillotineFloorplan.cpp(60,27): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+D:\Facultate\Semestrul_2_Master\AEA\Code-Automated-Algorithm-Selection\floorplanning\src\GuillotineFloorplan.cpp(71,27): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+D:\Facultate\Semestrul_2_Master\AEA\Code-Automated-Algorithm-Selection\floorplanning\src\GuillotineFloorplan.cpp(87,31): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+D:\Facultate\Semestrul_2_Master\AEA\Code-Automated-Algorithm-Selection\floorplanning\src\GuillotineFloorplan.cpp(103,31): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+  main.cpp
+  MILPFloorplan.cpp
+  ShelfFloorplan.cpp
+D:\Facultate\Semestrul_2_Master\AEA\Code-Automated-Algorithm-Selection\floorplanning\src\ShelfFloorplan.cpp(206,34): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+D:\Facultate\Semestrul_2_Master\AEA\Code-Automated-Algorithm-Selection\floorplanning\src\ShelfFloorplan.cpp(251,34): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+  SkylineFloorplan.cpp
+D:\Facultate\Semestrul_2_Master\AEA\Code-Automated-Algorithm-Selection\floorplanning\src\SkylineFloorplan.cpp(5,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\Facultate\Semestrul_2_Master\AEA\Code-Automated-Algorithm-Selection\floorplanning\src\SkylineFloorplan.cpp(144,27): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+D:\Facultate\Semestrul_2_Master\AEA\Code-Automated-Algorithm-Selection\floorplanning\src\SkylineFloorplan.cpp(148,27): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+D:\Facultate\Semestrul_2_Master\AEA\Code-Automated-Algorithm-Selection\floorplanning\src\SkylineFloorplan.cpp(156,27): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+D:\Facultate\Semestrul_2_Master\AEA\Code-Automated-Algorithm-Selection\floorplanning\src\SkylineFloorplan.cpp(160,27): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+D:\Facultate\Semestrul_2_Master\AEA\Code-Automated-Algorithm-Selection\floorplanning\src\SkylineFloorplan.cpp(178,27): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+D:\Facultate\Semestrul_2_Master\AEA\Code-Automated-Algorithm-Selection\floorplanning\src\SkylineFloorplan.cpp(182,27): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+D:\Facultate\Semestrul_2_Master\AEA\Code-Automated-Algorithm-Selection\floorplanning\src\SkylineFloorplan.cpp(190,27): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+D:\Facultate\Semestrul_2_Master\AEA\Code-Automated-Algorithm-Selection\floorplanning\src\SkylineFloorplan.cpp(194,27): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+  Generating Code...
+  Cpp_Project.vcxproj -> D:\Facultate\Semestrul_2_Master\AEA\Code-Automated-Algorithm-Selection\floorplanning\Cpp_Project\x64\Debug\Cpp_Project.exe
+  'pwsh.exe' is not recognized as an internal or external command,
+  operable program or batch file.

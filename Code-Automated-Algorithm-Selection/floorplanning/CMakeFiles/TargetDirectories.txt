@@ -1,0 +1,3 @@
+D:/Facultate/Semestrul_2_Master/AEA/Code-Automated-Algorithm-Selection/floorplanning/CMakeFiles/floorplan.dir
+D:/Facultate/Semestrul_2_Master/AEA/Code-Automated-Algorithm-Selection/floorplanning/CMakeFiles/ALL_BUILD.dir
+D:/Facultate/Semestrul_2_Master/AEA/Code-Automated-Algorithm-Selection/floorplanning/CMakeFiles/ZERO_CHECK.dir
