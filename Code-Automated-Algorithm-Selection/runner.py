@@ -1,11 +1,20 @@
 import copy
+import random
 
 import torch
+import torchvision
+from torch import nn, Tensor
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from torchensemble.utils.logging import set_logger
+from torchvision import datasets
 from torchvision.datasets import CIFAR100, CIFAR10
 from torchvision.transforms import v2
 
+import MLP
+from torchensemble import VotingClassifier
+
+from EncoderDecoder import Upsampling, Downsampling
 from dataset import Dataset
 from loader import TrainLoader, TestLoader, ValidateLoader
 from model import Model
@@ -50,9 +59,9 @@ class Runner:  # corresponds to scenario when dataset needs to be loaded and pro
         #         test_dataset = transform(test_dataset)
         # dataset[200:][0] = copy.deepcopy(test_dataset)
         dataset = tuple([(tuple(x[0]), tuple(x[1])) for x in dataset])
-        train_dataset_ = Dataset(self.dataset_path, lambda path: (tuple([x for x in dataset[:500]]), 500),
+        train_dataset_ = Dataset(self.dataset_path, lambda path: (tuple([x for x in dataset[:900]]), 900),
                                  transformations=transforms, transformations_test=transforms_test)
-        test_dataset_ = Dataset(self.dataset_path, lambda path: (tuple([x for x in dataset[500:]]), 61),
+        test_dataset_ = Dataset(self.dataset_path, lambda path: (tuple([x for x in dataset[900:]]), 144),
                                 transformations=transforms, transformations_test=transforms_test,
                                 training=False)
         train_loader = DataLoader(train_dataset_, shuffle=True, pin_memory=pin_memory,
@@ -60,10 +69,116 @@ class Runner:  # corresponds to scenario when dataset needs to be loaded and pro
                                   batch_size=batch_size, drop_last=True)
         validation_loader = DataLoader(test_dataset_, shuffle=False, pin_memory=True, num_workers=0,
                                        batch_size=val_batch_size, drop_last=False)
-        train_tune = TrainTune(model, train_loader, validation_loader, self.writer,
-                               device=self.device, similarity=self.similarity, treshold=self.treshold,
-                               config=config, no_class=num_classes, model_forward=model_forward)
-        train_tune.run(self.epochs)
+
+        # train_tune = TrainTune(model, train_loader, validation_loader, self.writer,
+        #                        device=self.device, similarity=self.similarity, treshold=self.treshold,
+        #                        config=config, no_class=num_classes, model_forward=model_forward)
+        # train_tune.run(self.epochs)
+
+        class MLP1(torch.nn.Module):
+            def __init__(self):
+                super(MLP1, self).__init__()
+                self.layers = [torch.nn.Linear(16, 36),
+                               torch.nn.ReLU(),
+                               torch.nn.Linear(36, 72),
+                               torch.nn.ReLU(),
+                               torch.nn.Linear(72, 144),
+                               torch.nn.ReLU(),
+                               torch.nn.Linear(144, 10),
+                               torch.nn.ReLU(),
+                               torch.nn.Linear(10, 144),
+                               torch.nn.ReLU(),
+                               torch.nn.Linear(144, 6),
+                               torch.nn.Softmax(dim=1)]
+                torch.nn.init.xavier_normal_(self.layers[0].weight)
+                torch.nn.init.xavier_normal_(self.layers[2].weight)
+                torch.nn.init.xavier_normal_(self.layers[4].weight)
+                torch.nn.init.xavier_normal_(self.layers[6].weight)
+                torch.nn.init.xavier_normal_(self.layers[8].weight)
+                torch.nn.init.xavier_normal_(self.layers[10].weight)
+                self.layers = torch.nn.Sequential(*self.layers)
+
+            def forward(self, features: Tensor):
+                features = self.layers(features)
+                return features
+
+        class Conv1(torch.nn.Module):
+            def __init__(self):
+                super(Conv1, self).__init__()
+                in_channels = 1
+                hidden_channels = 2
+                self.layers = [torch.nn.ConvTranspose2d(in_channels, hidden_channels * 2,
+                                                        kernel_size=(4, 4), stride=1,
+                                                        padding=0, output_padding=0),
+                               Upsampling(hidden_channels * 2, hidden_channels * 4, dropout=True,
+                                          kernel_size=(4, 4), stride=1,
+                                          padding=0),
+                               Upsampling(hidden_channels * 4, hidden_channels * 8, dropout=True,
+                                          kernel_size=(4, 4), stride=2,
+                                          padding=0),
+                               Upsampling(hidden_channels * 8, hidden_channels * 16, dropout=True,
+                                          kernel_size=(4, 4), stride=2,
+                                          padding=1),
+
+                               Downsampling(hidden_channels * 16, hidden_channels * 8,
+                                            kernel_size=(4, 4), stride=2,
+                                            padding=1),
+                               Downsampling(hidden_channels * 8, hidden_channels * 4,
+                                            kernel_size=(4, 4), stride=2,
+                                            padding=0),
+                               Downsampling(hidden_channels * 4, hidden_channels * 2,
+                                            kernel_size=(4, 4), stride=1,
+                                            padding=0),
+                               Downsampling(hidden_channels * 2, hidden_channels * 1,
+                                            kernel_size=(4, 4), stride=1,
+                                            padding=0, norm=False),
+                               torch.nn.Flatten(),
+                               torch.nn.Linear(32, 100),
+                               torch.nn.Linear(100, 6),
+                               torch.nn.Softmax(dim=1)]
+                torch.nn.init.xavier_normal_(self.layers[0].weight)
+                self.layers = torch.nn.Sequential(*self.layers)
+
+            def forward(self, features: Tensor):
+                features = self.layers(features)
+                return features
+
+        ensemble = VotingClassifier(
+            estimator=MLP1,  # here is your deep learning model
+            n_estimators=10,  # number of base estimators
+            cuda=True
+        )
+        # Set the criterion
+        criterion = torch.nn.MSELoss()  # training objective
+        ensemble.set_criterion(criterion)
+
+        # Set the optimizer
+        ensemble.set_optimizer(
+            "Adam",  # type of parameter optimizer
+            lr=1e-3,  # learning rate of parameter optimizer
+            weight_decay=1e-4,  # weight decay of parameter optimizer
+        )
+
+        # # Set the learning rate scheduler
+        ensemble.set_scheduler(
+            "CosineAnnealingLR",  # type of learning rate scheduler
+            T_max=self.epochs,  # additional arguments on the scheduler
+        )
+
+        # Train the ensemble
+        ensemble.fit(
+            train_loader,
+            epochs=self.epochs,  # number of training epochs
+            test_loader=validation_loader
+        )
+        output = ensemble.predict(validation_loader)
+        correct = 0
+        labels = [x[1] for x in test_dataset_]
+        for index, instance in enumerate(output):
+            optimal = (labels[index] == torch.max(labels[index])).nonzero()
+            if instance.argmax(dim=0) in optimal:
+                correct += 1
+        print(correct / len(output))
 
     def configure_sweep(self):
         metric = {

@@ -99,15 +99,21 @@ class MinMaxNormalization:
 
 
 class StandardNormalization:
-    def __init__(self, mean, std):
+    def __init__(self, mean, std):  # , mean_l, std_l):
         self.mean = mean  # number of features
         self.std = std
+        # self.mean_l = mean_l
+        # self.std_l = std_l
 
     def __call__(self, instances):
         instance = torch.Tensor(instances[0])
+        instance_l = torch.Tensor(instances[1])
         for index in range(len(self.mean)):
             instance[index] -= self.mean[index]
             instance[index] /= self.std[index]
+        # for index in range(len(self.mean_l)):
+        #     instance_l[index] -= self.mean_l[index]
+        #     instance_l[index] /= self.std_l[index]
         return instance, instances[1]
 
 
@@ -120,11 +126,12 @@ class ToTensor:
 
 
 class Unsqueeze:
-    def __init__(self):
-        pass
+    def __init__(self, dim1, dim2):
+        self.dim1 = dim1
+        self.dim2 = dim2
 
     def __call__(self, instances):
-        return instances[0].unsqueeze(0).unsqueeze(-1), instances[1]
+        return instances[0].reshape(self.dim1, self.dim2).unsqueeze(0), instances[1]
 
 
 class ChangeType:

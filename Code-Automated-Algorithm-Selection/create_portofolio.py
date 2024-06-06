@@ -17,12 +17,12 @@ out = open('labels_train.txt', 'a')
 out_res = open('results.txt', 'a')
 # index = 0
 # for file in os.listdir(dataset1):
-#     if file != '3023.in':
+#     if file != '329.in':
 #         index += 1
 #     else:
 #         break
 # print(index)
-for file in os.listdir(dataset1)[1252:]:
+for file in os.listdir(dataset1)[1548:]:
     configuration = {'boxes': []}
     shelf = True
     with (open(os.path.join(dataset1, file), 'r') as file_open):

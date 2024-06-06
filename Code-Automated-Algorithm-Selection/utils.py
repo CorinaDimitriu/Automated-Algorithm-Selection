@@ -1,6 +1,7 @@
 import csv
 import itertools
 import math
+import random
 import shutil
 import os
 from typing import Tuple
@@ -109,13 +110,22 @@ def build_dataset_initial(dataset_path):
 
 
 def count_correct_predictions(output, labels):
+    # correct = 0
+    # for index, instance in enumerate(output):
+    #     how_many = labels[index].nonzero()[:, 0].shape[0]
+    #     if instance.topk(how_many, 0, True, True).indices in labels[index].nonzero()[:, 0]:
+    #         correct += 1
+    # return correct
+    # return (output.argmax(dim=1) == labels).sum().item()  # perfect prediction per instance
+
+    # for results.txt : min instead of max
+
     correct = 0
     for index, instance in enumerate(output):
-        how_many = labels[index].nonzero()[:, 0].shape[0]
-        if instance.topk(how_many, 0, True, True).indices in labels[index].nonzero()[:, 0]:
+        optimal = (labels[index] == torch.max(labels[index])).nonzero()
+        if instance.argmax(dim=0) in optimal:
             correct += 1
     return correct
-    # return (output.argmax(dim=1) == labels).sum().item()  # perfect prediction per instance
 
 
 def turn_to_zero(input: Tensor):
@@ -126,60 +136,109 @@ def build_dataset_for_AAS(path):
     input_features = '.\\dataset1'
     input_labels = '.\\labels_train.txt'
     dataset = []
+    names = []
+    all_labels = []
     with open(input_labels, 'r') as file_out:
         for instance in file_out:
-            name = instance.split(' : ')[0]
+            names.append(instance.split(' : ')[0])
             labels = instance.split(' : ')[2].strip('][\n').split(', ')
+            # labels = instance.split(' : ')[1].strip('][\n').split(', ')
             labels = [int(label) for label in labels]
-            with open(os.path.join(input_features, name), 'r') as file_in:
-                configuration = {'boxes': []}
-                for index, line in enumerate(file_in):
-                    line = line.replace('\t', ' ')
-                    line = line.replace('  ', ' ')
-                    if index == 0:
-                        configuration['width'] = int(line.split(' ')[0])
-                    elif index == 1:
-                        continue
-                    elif '0' in line or '1' in line or '2' in line or '3' in line or \
-                            '4' in line or '5' in line or '6' in line or '7' in line or \
-                            '8' in line or '9' in line:
-                        width = int(line.split(' ')[0])
-                        height = int(line.split(' ')[1].strip())
-                        configuration['boxes'].append([width, height])
-            # compute effective features to feed NN
-            max_aspect_ratio = -math.inf
-            max_area_ratio = -math.inf
-            mean = 0.0
-            # len_distinct = len(configuration['boxes'])
-            counter = dict()
-            for i1, box in enumerate(configuration['boxes']):
-                aspect_ratio = max(box) / min(box) * 1.0
-                max_aspect_ratio = max([max_aspect_ratio, aspect_ratio])
-                mean += (box[0] + box[1])
-                counter[tuple(box)] = 1
-                for i2, box2 in enumerate(configuration['boxes']):
-                    if i1 != i2:
-                        area_ratio = (box[0] * box[1]) / (box2[0] * box2[1]) * 1.0
-                        max_area_ratio = max([max_area_ratio, area_ratio])
-                        # if (box[0] == box2[0] and box[1] == box2[1]) or (box[0] == box2[1] and box[1] == box2[0]):
-                        #     len_distinct -= 1
-            heterogeneity_ratio = len(configuration['boxes']) / len(counter) * 1.0
-            mean /= len(configuration['boxes']) * 2
-            width_ratio = configuration['width'] / mean
-            features = [max_aspect_ratio, max_area_ratio, heterogeneity_ratio, width_ratio]
-            labels_3 = 1 if np.array(labels[3:-3]).any() else 0
-            labels_4 = 1 if np.array(labels[-3:-1]).any() else 0
-            new_labels = [labels[0], labels[1], labels[2], labels_3, labels_4, labels[5]]
-            dataset.append([features, new_labels])
+            # labels = [int(float(label)) for label in labels]
+            all_labels.append(labels)
+
+    # shuffled_indices = list(range(1046))
+    # random.shuffle(shuffled_indices)
+    # with open("random_r.txt", 'w') as file:
+    #     print(shuffled_indices, file=file, flush=True)
+
+    with open("random.txt", 'r') as file:
+        data = file.read()
+        data = data.strip('][\n').split(', ')
+        shuffled_indices = [int(instance) for instance in data]
+
+    for index1 in shuffled_indices:
+        name = names[index1]
+        labels = all_labels[index1]
+        with open(os.path.join(input_features, name), 'r') as file_in:
+            configuration = {'boxes': []}
+            for index, line in enumerate(file_in):
+                line = line.replace('\t', ' ')
+                line = line.replace('  ', ' ')
+                if index == 0:
+                    configuration['width'] = int(line.split(' ')[0])
+                elif index == 1:
+                    continue
+                elif '0' in line or '1' in line or '2' in line or '3' in line or \
+                        '4' in line or '5' in line or '6' in line or '7' in line or \
+                        '8' in line or '9' in line:
+                    width = int(line.split(' ')[0])
+                    height = int(line.split(' ')[1].strip())
+                    configuration['boxes'].append([width, height])
+        # compute effective features to feed NN
+        max_aspect_ratio = -math.inf
+        max_area_ratio = -math.inf
+        mean = 0.0
+        mean_width = 0.0
+        mean_height = 0.0
+        # len_distinct = len(configuration['boxes'])
+        counter = dict()
+        for i1, box in enumerate(configuration['boxes']):
+            aspect_ratio = max(box) / min(box) * 1.0
+            max_aspect_ratio = max([max_aspect_ratio, aspect_ratio])
+            mean += (box[0] + box[1])
+            mean_width += box[0]
+            mean_height += box[1]
+            counter[tuple(box)] = 1
+            for i2, box2 in enumerate(configuration['boxes']):
+                if i1 != i2:
+                    area_ratio = (box[0] * box[1]) / (box2[0] * box2[1]) * 1.0
+                    max_area_ratio = max([max_area_ratio, area_ratio])
+                    # if (box[0] == box2[0] and box[1] == box2[1]) or (box[0] == box2[1] and box[1] == box2[0]):
+                    #     len_distinct -= 1
+        heterogeneity_ratio = len(configuration['boxes']) / len(counter) * 1.0
+        mean /= len(configuration['boxes']) * 2
+        mean_width /= len(configuration['boxes'])
+        mean_height /= len(configuration['boxes'])
+        width_ratio = configuration['width'] / mean
+        median = np.median(np.array(configuration['boxes']).flatten())
+        median_width = np.median(np.array(configuration['boxes'])[:, 0])
+        median_height = np.median(np.array(configuration['boxes'])[:, 1])
+        variance = np.var(np.array(configuration['boxes']).flatten())
+        variance_width = np.var(np.array(configuration['boxes'])[:, 0])
+        variance_height = np.var(np.array(configuration['boxes'])[:, 1])
+        max_all = np.max(np.array(configuration['boxes']).flatten())
+        max_width = np.max(np.array(configuration['boxes'])[:, 0])
+        max_height = np.max(np.array(configuration['boxes'])[:, 1])
+        features = [max_aspect_ratio, max_area_ratio, heterogeneity_ratio, width_ratio,
+                    median, median_width, median_height, mean, mean_width, mean_height,
+                    variance, variance_width, variance_height, max_all, max_width, max_height,
+                    ]
+        labels_3 = 1 if np.array(labels[3:-3]).any() else 0
+        # labels_3 = np.min(np.array(labels[3:-3]))
+        labels_4 = 1 if np.array(labels[-3:-1]).any() else 0
+        # labels_4 = np.min(np.array(labels[-3:-1]))
+        new_labels = [labels[0], labels[1], labels[2], labels_3, labels_4, labels[5]]
+        dataset.append([features, new_labels])
     return dataset, len(dataset)
 
 
 # dataset = build_dataset_for_AAS('')[0]
-# dataset = [instance[0] for instance in dataset]
-# dataset = np.array(dataset, dtype=np.float64)
+# dataset_f = [instance[0] for instance in dataset]
+# dataset_f = np.array(dataset_f, dtype=np.float64)
 # means = []
 # sd = []
-# for features_i in np.array(dataset[:500]).T:
+# for features_i in np.array(dataset_f[:900]).T:
+#     means.append(np.mean(features_i))
+#     sd.append(np.std(features_i))
+# print(means)
+# print(sd)
+#
+# labels = [instance[1] for instance in dataset]
+# labels = np.array(labels, dtype=np.float64)
+# means = []
+# sd = []
+# for features_i in labels.T:
 #     means.append(np.mean(features_i))
 #     sd.append(np.std(features_i))
 # print(means)
